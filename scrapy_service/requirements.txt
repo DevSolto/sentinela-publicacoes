@@ -1,0 +1,3 @@
+# Dependências específicas do serviço Scrapy
+scrapy>=2.11
+itemadapter>=0.8

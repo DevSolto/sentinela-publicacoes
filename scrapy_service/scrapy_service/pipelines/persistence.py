@@ -2,9 +2,14 @@
 from __future__ import annotations
 
 import json
+import os
+import uuid
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Dict
+
+from scrapy_service.utils.metrics import observe_run
+from scrapy_service.utils.runs_logger import RunMetadata, RunsLogger
 
 from pymongo import MongoClient
 from pymongo.collection import Collection
@@ -29,6 +34,8 @@ class PersistencePipeline:
         self.mongo_posts: Collection | None = None
         self.mongo_comments: Collection | None = None
         self.pg_conn: Connection | None = None
+        self.runs_logger: RunsLogger | None = None
+        self._run_context = None
 
     @classmethod
     def from_crawler(cls, crawler: Any) -> "PersistencePipeline":
@@ -45,6 +52,27 @@ class PersistencePipeline:
     def open_spider(self, spider: Any) -> None:
         self._setup_mongo()
         self._setup_postgres()
+        profile_id = os.getenv("PROFILE_ID") or getattr(spider, "profile_id", None)
+        janela_dias_env = os.getenv("JANELA_DIAS") or getattr(spider, "janela_dias", None)
+        janela_dias = int(janela_dias_env) if janela_dias_env else 0
+        run_id_env = os.getenv("RUN_ID")
+        if profile_id and janela_dias:
+            metadata = RunMetadata(profile_id=profile_id, janela_dias=janela_dias)
+            if run_id_env:
+                try:
+                    metadata.run_id = uuid.UUID(run_id_env)
+                except ValueError:
+                    spider.logger.warning("RUN_ID inválido: %s", run_id_env)
+            metadata.context.update({"spider": spider.name})
+            self.runs_logger = RunsLogger(self.config.postgres_dsn)
+            self.runs_logger.start(metadata)
+            self._run_context = observe_run(spider.name)
+            self._run_context.__enter__()
+        else:
+            spider.logger.warning(
+                "RunsLogger desativado: profile_id ou janela_dias ausentes",
+                extra={"profile_id": profile_id, "janela_dias": janela_dias_env},
+            )
         spider.logger.info("Persistence pipeline initialised")
 
     def close_spider(self, spider: Any) -> None:
@@ -52,6 +80,20 @@ class PersistencePipeline:
             self.mongo_client.close()
         if self.pg_conn:
             self.pg_conn.close()
+        if self._run_context:
+            finish_reason = spider.crawler.stats.get_value("finish_reason", default="finished")
+            if finish_reason == "finished":
+                self._run_context.__exit__(None, None, None)
+            else:
+                self._run_context.__exit__(RuntimeError, RuntimeError(finish_reason), None)
+            self._run_context = None
+        if self.runs_logger:
+            finish_reason = spider.crawler.stats.get_value("finish_reason", default="finished")
+            if finish_reason == "finished":
+                self.runs_logger.finish()
+            else:
+                self.runs_logger.fail(f"Spider finalizado com motivo: {finish_reason}")
+            self.runs_logger = None
 
     # ----- Setup helpers -------------------------------------------------
     def _setup_mongo(self) -> None:
@@ -83,6 +125,8 @@ class PersistencePipeline:
             self._upsert_post(item, spider)
         elif entity == "comment":
             self._upsert_comment(item, spider)
+        if self.runs_logger:
+            self.runs_logger.increment_items(spider.name)
 
         profile_id = item.get("profile_id")
         checkpoint_marker = item.get("checkpoint")

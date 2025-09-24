@@ -1,0 +1,40 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: sentinela-coletor
+spec:
+  schedule: "0 */6 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 2
+  failedJobsHistoryLimit: 5
+  jobTemplate:
+    spec:
+      backoffLimit: 3
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: scrapy-coletor
+              image: ghcr.io/organizacao/sentinela-scrapy:latest
+              imagePullPolicy: IfNotPresent
+              env:
+                - name: RUN_ID
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.uid
+                - name: PROFILE_ID
+                  value: "{{ profile_id }}"
+                - name: JANELA_DIAS
+                  value: "{{ janela_dias }}"
+                - name: SCRAPY_SETTINGS_MODULE
+                  value: scrapy_service.settings
+              command:
+                - /bin/sh
+                - -c
+                - >-
+                  scrapy crawl posts \
+                  -s RUN_ID=$RUN_ID \
+                  -a profile_id=$PROFILE_ID \
+                  -a janela_dias=$JANELA_DIAS
+          nodeSelector:
+            sentinela/component: coletor

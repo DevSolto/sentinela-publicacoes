@@ -124,6 +124,18 @@ class Run(Base):
         nullable=True,
         comment="Contexto adicional ou parâmetros utilizados na execução.",
     )
+    items_collected: Mapped[int] = mapped_column(
+        sa.Integer(),
+        nullable=False,
+        default=0,
+        server_default=sa.text("0"),
+        comment="Quantidade total de itens processados pela execução.",
+    )
+    error_message: Mapped[Optional[str]] = mapped_column(
+        sa.Text(),
+        nullable=True,
+        comment="Mensagem de erro associada à execução, quando existente.",
+    )
 
     profile: Mapped["Profile"] = relationship("Profile", back_populates="runs")
     checkpoints: Mapped[list["Checkpoint"]] = relationship(

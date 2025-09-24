@@ -30,6 +30,29 @@ Cada serviço possui suas próprias dependências para garantir isolamento. Reco
    scrapy crawl <nome_da_spider>
    ```
 
+#### Execução manual e gerenciamento de perfis
+
+Para executar a coleta manualmente e manter uma lista de perfis monitorados,
+utilize o utilitário `scrapy_service.cli`:
+
+- Adicionar ou atualizar um perfil no arquivo `profiles.json` (criado
+  automaticamente caso não exista):
+  ```bash
+  python -m scrapy_service.cli add-profile sentinela \
+      "https://rede.social/@sentinela" \
+      --display-name "Sentinela" \
+      --scroll-limit 5
+  ```
+- Executar a spider de perfis apenas para o identificador informado:
+  ```bash
+  python -m scrapy_service.cli run-profiles --profile-id sentinela --run-id $(uuidgen)
+  ```
+
+O comando `run-profiles` aceita múltiplos `--profile-id` e também permite
+sobrescrever parâmetros como `--scroll-limit` e `--scroll-delay` somente para a
+execução atual. Para aplicar configurações extras do Scrapy utilize `--setting
+CHAVE=valor` (pode ser informado várias vezes).
+
 ### API Service
 1. Acesse o diretório do serviço:
    ```bash

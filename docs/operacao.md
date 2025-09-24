@@ -26,6 +26,27 @@ Ajuste-os conforme a capacidade da origem monitorada e a largura de banda
 Para evitar saturar proxies ou a própria API de origem, combine esses parâmetros com
 `DOWNLOAD_DELAY` (padrão `0`) e o campo `pagination_delay` dos spiders Playwright.
 
+## Execução manual da coleta
+
+Para disparar coletas sob demanda sem aguardar o agendamento padrão, utilize o
+comando de utilidades empacotado com o serviço Scrapy:
+
+```bash
+cd scrapy_service
+python -m scrapy_service.cli run-profiles --profile-id <identificador>
+```
+
+Antes disso, cadastre o perfil (caso ainda não exista no arquivo
+`profiles.json`) com:
+
+```bash
+python -m scrapy_service.cli add-profile <identificador> "https://exemplo.com/perfil"
+```
+
+Ambos os comandos aceitam a flag `--profiles-file` para apontar um caminho
+alternativo e podem ser versionados em repositórios de configuração para
+garantir rastreabilidade das alterações.
+
 ## Rotação de proxies
 
 A rotação é feita pelo middleware `ProxyRotationMiddleware`, que escolhe proxies a

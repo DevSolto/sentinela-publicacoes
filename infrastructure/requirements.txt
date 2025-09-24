@@ -1,0 +1,3 @@
+# Dependências para scripts de infraestrutura e automação
+fabric>=3.2
+python-dotenv>=1.0

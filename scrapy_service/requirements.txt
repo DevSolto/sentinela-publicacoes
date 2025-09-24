@@ -1,3 +1,7 @@
 # Dependências específicas do serviço Scrapy
 scrapy>=2.11
+scrapy-playwright>=0.0.34
 itemadapter>=0.8
+pymongo>=4.9
+psycopg[binary]>=3.2
+redis>=5.0

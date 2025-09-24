@@ -5,6 +5,11 @@ import json
 import os
 from pathlib import Path
 
+from scrapy_service.logging_config import configure_structured_logging
+from scrapy_service.utils import metrics as _metrics  # noqa: F401 - importa para iniciar servidor
+
+configure_structured_logging()
+
 BOT_NAME = "scrapy_service"
 
 SPIDER_MODULES = ["scrapy_service.spiders"]

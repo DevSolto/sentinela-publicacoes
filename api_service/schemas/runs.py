@@ -19,3 +19,7 @@ class ExecucaoMonitoramento(BaseModel):
     total_publicacoes: int = Field(
         0, ge=0, description="Quantidade de publicações processadas na execução"
     )
+    mensagem_erro: Optional[str] = Field(
+        None,
+        description="Mensagem de erro capturada na execução, quando aplicável",
+    )

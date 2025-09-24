@@ -5,3 +5,4 @@ itemadapter>=0.8
 pymongo>=4.9
 psycopg[binary]>=3.2
 redis>=5.0
+prometheus-client>=0.20
